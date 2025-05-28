@@ -1,0 +1,45 @@
+
+services:
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: cbts_db 
+      POSTGRES_USER: cbtsuser
+      POSTGRES_PASSWORD: cbtspassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cbts-network
+
+  backend:
+    build:
+      context: ./backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - cbts-network
+  frontend:
+    build:
+      context: ./frontend
+    volumes:
+      - ./frontend:/app             # Sync local changes
+      - /app/node_modules           # Prevent local node_modules interference
+    ports:
+      - "3000:80"                   # Keep your original production port mapping
+    depends_on:
+      - backend
+    networks:
+    - cbts-network
+
+
+volumes:
+  postgres_data:
+
+networks:
+  cbts-network:
+    driver: bridge
