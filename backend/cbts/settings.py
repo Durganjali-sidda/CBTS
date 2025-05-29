@@ -169,15 +169,22 @@ REST_FRAMEWORK = {
 SITE_ID = 1
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
-# ACCOUNT_AUTHENTICATION_METHOD = "email"   # This enables email-based login
+ACCOUNT_AUTHENTICATION_METHOD = "email"   # This enables email-based login
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
-ACCOUNT_LOGIN_METHODS = {"email"}  # instead of ACCOUNT_AUTHENTICATION_METHOD
+# ACCOUNT_LOGIN_METHODS = {"email"}  # instead of ACCOUNT_AUTHENTICATION_METHOD
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]  # instead of ACCOUNT_EMAIL_REQUIRED etc.
 
 # dj-rest-auth custom serializer for registration (optional but gives you control)
 REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'dj_rest_auth.registration.serializers.RegisterSerializer',
 }
+REST_AUTH_SERIALIZERS = {
+    'LOGIN_SERIALIZER': 'tracker.serializers.CustomLoginSerializer',
+}
 
+AUTHENTICATION_BACKENDS = [
+    'tracker.auth_backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep for admin login etc.
+]

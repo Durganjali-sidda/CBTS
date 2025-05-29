@@ -3,8 +3,9 @@ from rest_framework import viewsets
 from .models import Bug
 from .serializers import BugSerializer
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsAdminUser 
 
 class BugViewSet(viewsets.ModelViewSet):
     queryset = Bug.objects.all()
     serializer_class = BugSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated,IsAdminUser] 
