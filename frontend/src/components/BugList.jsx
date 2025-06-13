@@ -1,10 +1,11 @@
+// src/components/BugList.jsx
 import { useEffect, useState } from "react";
 import { fetchBugs } from "../services/api";
 
 function BugList() {
   const [bugs, setBugs] = useState([]);
-  const [loading, setLoading] = useState(true); // Track loading state
-  const [error, setError] = useState(""); // Track error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const getBugs = async () => {
@@ -13,23 +14,22 @@ function BugList() {
         setBugs(response.data);
         setLoading(false);
       } catch (error) {
-        console.log(error)
+        console.error(error);
         setError("Failed to fetch bugs. Please try again later.");
         setLoading(false);
       }
     };
-
     getBugs();
   }, []);
 
   if (loading) {
-    return <p className="text-center text-gray-600">Loading...</p>; // Show loading message
+    return <p className="text-center text-gray-600">Loading...</p>;
   }
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6 text-center text-gray-700">Bug List</h1>
-      {error && <p className="text-red-500 text-center">{error}</p>} {/* Show error message if any */}
+      {error && <p className="text-red-500 text-center">{error}</p>}
       {bugs.length === 0 ? (
         <p className="text-center text-gray-600">No bugs found.</p>
       ) : (
@@ -42,10 +42,23 @@ function BugList() {
               <h2 className="font-semibold text-xl text-gray-800">{bug.title}</h2>
               <p className="text-gray-600">{bug.description}</p>
               <div className="mt-2 flex justify-between text-sm text-gray-500">
-                <p>Status: <span className={`font-semibold ${bug.status === 'closed' ? 'text-green-600' : 'text-yellow-600'}`}>{bug.status}</span></p>
-                <p>Assigned to: <span className="font-semibold">{bug.assigned_to}</span></p>
+                <p>
+                  Status:{" "}
+                  <span
+                    className={`font-semibold ${
+                      bug.status === "closed" ? "text-green-600" : "text-yellow-600"
+                    }`}
+                  >
+                    {bug.status}
+                  </span>
+                </p>
+                <p>
+                  Assigned to: <span className="font-semibold">{bug.assigned_to}</span>
+                </p>
               </div>
-              <div className="text-xs text-gray-400 mt-1">Reported by: {bug.reported_by}</div>
+              <div className="text-xs text-gray-400 mt-1">
+                Reported by: {bug.reported_by}
+              </div>
             </li>
           ))}
         </ul>

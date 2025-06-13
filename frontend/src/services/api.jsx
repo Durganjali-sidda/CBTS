@@ -26,5 +26,22 @@ export const logoutUser = () => API.post('auth/logout/');
 
 
 // ================== Optional Admin/User APIs ==================
-export const fetchCurrentUser = () => API.get('auth/user/'); // Useful for checking login status or role
-export const fetchAllUsers = () => API.get('users/');         // Only for superusers/admins
+export const fetchCurrentUser = () => {
+  const token = localStorage.getItem('access_token');
+  return API.get('auth/user/', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const fetchAllUsers = () => {
+  const token = localStorage.getItem('access_token');
+  return API.get('users/', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+

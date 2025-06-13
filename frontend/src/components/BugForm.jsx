@@ -1,5 +1,6 @@
+// src/components/BugForm.jsx
 import { useState } from "react";
-import { createBug } from "../services/api"; // Import the createBug function
+import { createBug } from "../services/api";
 
 function BugForm({ onSuccess }) {
   const [formData, setFormData] = useState({
@@ -18,12 +19,13 @@ function BugForm({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      await createBug(formData, token); // Use the createBug function from api.js
+      // NOTE: your createBug(service) already attaches the JWT via axios interceptor.
+      //    You do not need to manually pass the token again here.
+      await createBug(formData);
       setSuccess("Bug submitted successfully.");
       setError("");
       setFormData({ title: "", description: "", status: "open", assigned_to: "" });
-      onSuccess && onSuccess(); // optional callback
+      onSuccess && onSuccess();
     } catch (err) {
       console.error(err);
       setError("Error submitting bug.");

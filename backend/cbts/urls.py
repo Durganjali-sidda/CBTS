@@ -17,11 +17,16 @@ Including another URLconf
 # cbts/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
 
+def api_root(request):
+    return JsonResponse({"message": "Welcome to the CBTS API. Use /api/ for access."})
 urlpatterns = [
+    path('', api_root), 
     path('admin/', admin.site.urls),
     path('api/', include('tracker.urls')),  # Include the tracker URLs
     path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
+    
 ]
+
 

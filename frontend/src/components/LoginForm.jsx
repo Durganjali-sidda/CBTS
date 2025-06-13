@@ -1,71 +1,107 @@
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { loginUser } from "../services/api";
+import { useState, useContext } from "react";
+import { Eye, EyeOff, User } from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom"; // Import for navigation
 
-function LoginForm() {
-  const [email, setEmail] = useState("");
+function LoginForm({ intendedRole, onLoginSuccess, onLoginError }) {
+  const { login } = useContext(AuthContext);
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [localError, setLocalError] = useState("");
+  const navigate = useNavigate(); // For navigation to reset password page
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError("");
     try {
-      const response = await loginUser({ email, password });
-      setSuccess("Login successful!");
-      setError("");
-      console.log("User Token:", response.data.key);
-
-      localStorage.setItem("token", response.data.key);
-      localStorage.setItem("role", response.data.role);
+      await login(username, password);
+      onLoginSuccess();
     } catch (err) {
-      console.error(err);
-      setSuccess("");
-      setError("Login failed. Check credentials.");
+      console.error("Login error:", err);
+      setLocalError("Login failed. Check credentials.");
+      onLoginError();
     }
   };
 
+  const formattedRole = intendedRole
+    ? intendedRole.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "User";
+
+  const handleForgotPassword = () => {
+    navigate("/forgot-password"); // Navigate to the Forgot Password page
+  };
+
   return (
-    <div className="max-w-md mx-auto mt-6 p-6 bg-white shadow-lg rounded-xl border border-gray-300 hover:shadow-xl transition-shadow duration-300">
-      <h2 className="text-2xl font-semibold mb-4 text-center text-blue-600">Login</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-3 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-md mx-auto mt-12 p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
+    >
+      <div className="flex flex-col items-center mb-6">
+        <div className="bg-blue-100 text-blue-700 rounded-full p-4 mb-2">
+          <User size={32} />
         </div>
+        <h2 className="text-xl font-semibold text-gray-800">
+          Logging in as{" "}
+          <span className="text-blue-600">{formattedRole}</span>
+        </h2>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <input
+          type="text"
+          placeholder="Username"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
-            className="w-full p-3 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
           <span
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
             onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </span>
         </div>
-        <button
+
+        <motion.button
+          whileHover={{ scale: 1.05 }}
           type="submit"
-          className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
         >
-          Login
-        </button>
-        {error && <p className="text-red-500 text-center">{error}</p>}
-        {success && <p className="text-green-600 text-center">{success}</p>}
+          Log In
+        </motion.button>
+
+        {localError && (
+          <p className="text-center text-red-500 font-medium">
+            {localError}
+          </p>
+        )}
+
+        <div className="text-center mt-4">
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className="text-blue-600 hover:text-blue-700 text-sm"
+          >
+            Forgot Password?
+          </button>
+        </div>
       </form>
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,50 +1,54 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { logoutUser } from '../services/api';
+import React, { useContext } from 'react';
+import { Link } from 'react-router-dom';
+import {AuthContext } from '../context/AuthContext';
 
-function Navbar() {
-  const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem('token');
+const Navbar = () => {
+  const { user, logoutUser } = useContext(AuthContext);
 
-  const handleLogout = async () => {
-    try {
-      await logoutUser(); // Optional: makes server-side logout call
-    } catch (err) {
-      console.warn("Logout failed or already logged out:", err);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
-      navigate('/login');
-    }
-  };
+  if (!user) return null; // Just in case
 
   return (
-    <header className="bg-blue-600 p-4 text-white shadow-md">
-      <nav className="flex justify-between items-center">
-        <div className="text-lg font-semibold">
-          <Link to="/" className="hover:text-gray-300 transition">Bug Tracker</Link>
-        </div>
-        <div className="space-x-4 flex items-center">
-          <Link to="/" className="hover:text-gray-300 transition">Home</Link>
-          <Link to="/bugs" className="hover:text-gray-300 transition">Bugs</Link>
+    <nav className="bg-blue-600 text-white px-4 py-3 shadow">
+      <div className="container mx-auto flex justify-between items-center">
+        <span className="text-xl font-semibold">Bug Tracker</span>
 
-          {isLoggedIn ? (
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-full transition duration-300 transform hover:scale-105"
-            >
-              Logout
-            </button>
-          ) : (
+        <div className="space-x-4">
+          <Link to="/bugs" className="hover:underline">Bugs</Link>
+
+          {user.role === 'developer' && (
             <>
-              <Link to="/login" className="hover:text-gray-300 transition">Login</Link>
-              <Link to="/register" className="hover:text-gray-300 transition">Register</Link>
+              <Link to="/create-bug" className="hover:underline">Create Bug</Link>
+              <Link to="/dashboard/developer" className="hover:underline">Dashboard</Link>
             </>
           )}
+
+          {user.role === 'product_manager' && (
+            <Link to="/dashboard/product-manager" className="hover:underline">Dashboard</Link>
+          )}
+
+          {user.role === 'engineering_manager' && (
+            <Link to="/dashboard/engineering-manager" className="hover:underline">Dashboard</Link>
+          )}
+
+          {user.role === 'team_lead' && (
+            <Link to="/dashboard/team-lead" className="hover:underline">Dashboard</Link>
+          )}
+
+          {user.role === 'tester' && (
+            <Link to="/dashboard/tester" className="hover:underline">Dashboard</Link>
+          )}
+
+          {user.role === 'customer' && (
+            <Link to="/dashboard/customer" className="hover:underline">Dashboard</Link>
+          )}
+
+          <button onClick={logoutUser} className="bg-red-500 px-3 py-1 rounded hover:bg-red-600">
+            Logout
+          </button>
         </div>
-      </nav>
-    </header>
+      </div>
+    </nav>
   );
-}
+};
 
 export default Navbar;

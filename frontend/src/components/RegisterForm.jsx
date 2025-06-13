@@ -1,3 +1,4 @@
+// src/components/RegisterForm.jsx
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
@@ -10,7 +11,6 @@ function RegisterForm() {
     password1: "",
     password2: "",
   });
-
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [success, setSuccess] = useState("");
@@ -27,17 +27,11 @@ function RegisterForm() {
       setSuccess("");
       return;
     }
-
     try {
       await registerUser(formData);
       setSuccess("Registration successful! Please login.");
       setError("");
-      setFormData({
-        email: "",
-        username: "",
-        password1: "",
-        password2: "",
-      });
+      setFormData({ email: "", username: "", password1: "", password2: "" });
     } catch (err) {
       console.error(err);
       setSuccess("");

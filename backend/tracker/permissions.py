@@ -1,6 +1,25 @@
-# tracker/permissions.py
-from rest_framework.permissions import BasePermission
+from rest_framework import permissions
 
-class IsAdminUser(BasePermission):
+class IsProductManager(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.is_superuser
+        return request.user.role == 'product_manager'
+
+class IsEngineeringManager(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'engineering_manager'
+
+class IsTeamLead(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'team_lead'
+
+class IsDeveloper(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'developer'
+
+class IsTester(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'tester'
+
+class IsCustomer(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'customer'
