@@ -1,15 +1,51 @@
 // src/context/AuthProvider.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { loginUser, fetchCurrentUser } from '../services/api';
 import { AuthContext } from './AuthContext';
 
 export default function AuthProvider({ children }) {
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Used to check current path
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
 
-  // On mount: Check if token exists and fetch user
+  // ✅ Logout handler
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setAccessToken(null);
+    setUser(null);
+    navigate('/login');
+  }, [navigate]);
+
+  // ✅ Role-based redirect
+  const redirectToDashboard = useCallback((role) => {
+    switch (role) {
+      case 'product_manager':
+        navigate('/dashboard/product-manager');
+        break;
+      case 'engineering_manager':
+        navigate('/dashboard/engineering-manager');
+        break;
+      case 'team_lead':
+        navigate('/dashboard/team-lead');
+        break;
+      case 'developer':
+        navigate('/dashboard/developer');
+        break;
+      case 'tester':
+        navigate('/dashboard/tester');
+        break;
+      case 'customer':
+        navigate('/dashboard/customer');
+        break;
+      default:
+        navigate('/unauthorized');
+    }
+  }, [navigate]);
+
+  // ✅ On mount: check token and fetch user (avoid redirect from public pages)
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
@@ -22,26 +58,27 @@ export default function AuthProvider({ children }) {
         const currentUser = resp.data;
         setUser(currentUser);
 
-        // Optional: redirect to role-based dashboard
-        redirectToDashboard(currentUser?.role);
+        // ✅ Only redirect if not on public pages
+        const publicPaths = ['/', '/login'];
+        if (!publicPaths.includes(location.pathname)) {
+          redirectToDashboard(currentUser?.role);
+        }
       } catch (err) {
         console.error('Failed to fetch current user', err);
-        localStorage.removeItem('access_token');
-        setAccessToken(null);
-        setUser(null);
-        navigate('/login');
+        handleLogout();
       }
     })();
-  }, [navigate]);
+  }, [redirectToDashboard, handleLogout, location.pathname]);
 
-  // Login handler
-  const login = async (username, password) => {
+  // ✅ Login handler
+  const login = async (identifier, password) => {
     try {
-      const resp = await loginUser({ username, password });
-      const token = resp.data.access;
+      const resp = await loginUser({ username: identifier, password });
+      const { access, refresh } = resp.data;
 
-      localStorage.setItem('access_token', token);
-      setAccessToken(token);
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      setAccessToken(access);
 
       const userResp = await fetchCurrentUser();
       const loggedInUser = userResp.data;
@@ -54,29 +91,8 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  // Logout handler
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    setAccessToken(null);
-    setUser(null);
-    navigate('/login');
-  };
-
-  // Role-based redirect
-  const redirectToDashboard = (role) => {
-    if (role === 'admin') {
-      navigate('/admin-dashboard');
-    } else if (role === 'project_manager') {
-      navigate('/pm-dashboard');
-    } else if (role === 'developer') {
-      navigate('/developer-dashboard');
-    } else {
-      navigate('/dashboard'); // fallback
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, accessToken }}>
+    <AuthContext.Provider value={{ user, login, logout: handleLogout, accessToken }}>
       {children}
     </AuthContext.Provider>
   );
