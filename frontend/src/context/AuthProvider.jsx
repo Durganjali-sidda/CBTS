@@ -1,4 +1,3 @@
-// src/context/AuthProvider.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loginUser, fetchCurrentUser } from '../services/api';
@@ -6,20 +5,19 @@ import { AuthContext } from './AuthContext';
 
 export default function AuthProvider({ children }) {
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ Used to check current path
+  const location = useLocation();
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
 
-  // ✅ Logout handler
   const handleLogout = useCallback(() => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user'); // Also clear user data
     setAccessToken(null);
     setUser(null);
     navigate('/login');
   }, [navigate]);
 
-  // ✅ Role-based redirect
   const redirectToDashboard = useCallback((role) => {
     switch (role) {
       case 'product_manager':
@@ -45,7 +43,6 @@ export default function AuthProvider({ children }) {
     }
   }, [navigate]);
 
-  // ✅ On mount: check token and fetch user (avoid redirect from public pages)
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
@@ -57,8 +54,8 @@ export default function AuthProvider({ children }) {
         const resp = await fetchCurrentUser();
         const currentUser = resp.data;
         setUser(currentUser);
+        localStorage.setItem('user', JSON.stringify(currentUser)); // ✅ Save user in localStorage
 
-        // ✅ Only redirect if not on public pages
         const publicPaths = ['/', '/login'];
         if (!publicPaths.includes(location.pathname)) {
           redirectToDashboard(currentUser?.role);
@@ -70,7 +67,6 @@ export default function AuthProvider({ children }) {
     })();
   }, [redirectToDashboard, handleLogout, location.pathname]);
 
-  // ✅ Login handler
   const login = async (identifier, password) => {
     try {
       const resp = await loginUser({ username: identifier, password });
@@ -83,6 +79,7 @@ export default function AuthProvider({ children }) {
       const userResp = await fetchCurrentUser();
       const loggedInUser = userResp.data;
       setUser(loggedInUser);
+      localStorage.setItem('user', JSON.stringify(loggedInUser)); // ✅ Save user in localStorage
 
       redirectToDashboard(loggedInUser?.role);
     } catch (err) {

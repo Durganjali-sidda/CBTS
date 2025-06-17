@@ -62,6 +62,8 @@ class Project(models.Model):
 # ---------------------------
 # Bug Model
 # ---------------------------
+# models.py
+
 class Bug(models.Model):
     STATUS_CHOICES = [
         ('open', 'Open'),
@@ -84,12 +86,15 @@ class Bug(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # 🛑 Only tester, customer, team_lead, admin can report bugs
     reported_by = models.ForeignKey(
         User,
         related_name='reported_bugs',
         on_delete=models.CASCADE,
-        limit_choices_to={'role__in': ['tester', 'customer', 'developer', 'team_lead']}
+        limit_choices_to={'role__in': ['tester', 'customer', 'team_lead', 'admin']}
     )
+
+    # ✅ Only developers can be assigned to bugs
     assigned_to = models.ForeignKey(
         User,
         related_name='assigned_bugs',
@@ -99,7 +104,10 @@ class Bug(models.Model):
         limit_choices_to={'role': 'developer'}
     )
 
+    # 🔗 Project this bug belongs to
     project = models.ForeignKey(Project, related_name='bugs', on_delete=models.CASCADE)
+
+    # 🔗 Optional team this bug is related to (useful for team leads or filtering)
     team = models.ForeignKey(Team, related_name='bugs', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
