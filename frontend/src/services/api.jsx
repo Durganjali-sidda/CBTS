@@ -1,34 +1,32 @@
 // src/services/api.js
 import axios from 'axios';
 
+// Check if we're in Docker environment
 const isDocker = window.location.hostname !== 'localhost';
 
+// Create API instance
 const API = axios.create({
   baseURL: isDocker
     ? import.meta.env.VITE_API_DOCKER
     : import.meta.env.VITE_API_LOCAL,
 });
 
-// 🔐 Attach token to requests
+// Attach token to every request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-});
+}, (error) => Promise.reject(error));
 
-// 🔁 Refresh token on 401
+// Auto-refresh token on 401
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Only retry once and if 401 Unauthorized
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -40,12 +38,11 @@ API.interceptors.response.use(
         API.defaults.headers.common['Authorization'] = `Bearer ${access}`;
         originalRequest.headers.Authorization = `Bearer ${access}`;
 
-        return API(originalRequest); // Retry original request
-      } catch  {
-        // Refresh token expired or invalid
+        return API(originalRequest);
+      } catch {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login'; // Optional: redirect to login
+        window.location.href = '/login';
       }
     }
 
@@ -53,22 +50,29 @@ API.interceptors.response.use(
   }
 );
 
-// ================== Bug APIs ==================
+// ================== ✅ Bug APIs ==================
 export const fetchBugs = () => API.get('bugs/');
 export const fetchBug = (id) => API.get(`bugs/${id}/`);
 export const createBug = (bugData) => API.post('bugs/', bugData);
 export const updateBug = (id, bugData) => API.put(`bugs/${id}/`, bugData);
 export const deleteBug = (id) => API.delete(`bugs/${id}/`);
 
-// ================== Auth APIs ==================
-export const loginUser = (credentials) => API.post('token/', credentials);
+// ================== ✅ Team + Project APIs ==================
+export const fetchTeamMembers = () => API.get('teams/members/');
+export const fetchProjects = () => API.get('projects/');
+
+// ================== ✅ Auth APIs ==================
+export const loginUser = ({ username, password }) =>
+  API.post('token/', { username, password });
+
 export const refreshToken = () => {
   const refresh = localStorage.getItem('refresh_token');
   return API.post('token/refresh/', { refresh });
 };
 export const registerUser = (userData) => API.post('auth/registration/', userData);
 export const logoutUser = () => API.post('auth/logout/');
+export const sendPasswordResetEmail = (email) => API.post('password-reset/', { email });
+export const fetchCurrentUser = () => API.get('auth/user/'); // ✅ REQUIRED
 
-// ================== Optional Admin/User APIs ==================
-export const fetchCurrentUser = () => API.get('auth/user/');
-export const fetchAllUsers = () => API.get('users/');
+// ================== ✅ Admin-only APIs ==================
+export const fetchAllUsers = () => API.get('auth/users/'); // ✅ Your missing function restored

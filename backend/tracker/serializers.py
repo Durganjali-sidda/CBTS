@@ -5,16 +5,16 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# Custom Login Serializer for dj-rest-auth
+# ----------------------------
+# Custom Login Serializer
+# ----------------------------
 class CustomLoginSerializer(LoginSerializer):
     """
-    Only username & password — drop any email field.
+    Custom login with only username and password.
     """
     def get_fields(self):
         fields = super().get_fields()
-        # Remove the email field if present
         fields.pop('email', None)
-        # Enforce username & password required
         fields['username'] = serializers.CharField(required=True)
         fields['password'] = serializers.CharField(
             required=True,
@@ -23,38 +23,66 @@ class CustomLoginSerializer(LoginSerializer):
         )
         return fields
 
+# ----------------------------
+# Nested Serializers
+# ----------------------------
+class TeamBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ['id', 'name']
+
+class ProjectBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ['id', 'name', 'description']
+
+class BugBasicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bug
+        fields = ['id', 'title', 'status', 'priority']
+
+# ----------------------------
 # User Serializer
+# ----------------------------
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.CharField(read_only=True)
-    team = serializers.StringRelatedField(read_only=True)
+    team = TeamBasicSerializer(read_only=True)
     related_projects = serializers.SerializerMethodField()
+    assigned_bugs = serializers.SerializerMethodField()
+    reported_bugs = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'first_name', 'last_name', 'role', 'team',
-            'related_projects'
+            'related_projects', 'assigned_bugs', 'reported_bugs'
         ]
 
     def get_related_projects(self, obj):
-        # PM: projects they manage
         if obj.role == 'product_manager':
             projects = Project.objects.filter(manager=obj)
-
-        # TL or Developer: projects via assigned team
-        elif obj.role in ['team_lead', 'developer', 'tester']:
+        elif obj.role in ['team_lead', 'developer', 'tester', 'team_manager']:
             if obj.team:
                 projects = Project.objects.filter(team=obj.team)
             else:
                 projects = Project.objects.none()
         else:
             projects = Project.objects.none()
+        return ProjectBasicSerializer(projects, many=True).data
 
-        return [project.name for project in projects]
+    def get_assigned_bugs(self, obj):
+        if obj.role == 'developer':
+            bugs = Bug.objects.filter(assigned_to=obj)
+            return BugBasicSerializer(bugs, many=True).data
+        return []
 
+    def get_reported_bugs(self, obj):
+        bugs = Bug.objects.filter(reported_by=obj)
+        return BugBasicSerializer(bugs, many=True).data
 
-
+# ----------------------------
 # Project Serializer
+# ----------------------------
 class ProjectSerializer(serializers.ModelSerializer):
     manager = serializers.StringRelatedField(read_only=True)
     teams = serializers.SerializerMethodField()
@@ -72,8 +100,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         bugs = Bug.objects.filter(project=obj)
         return [bug.title for bug in bugs]
 
-
+# ----------------------------
 # Team Serializer
+# ----------------------------
 class TeamSerializer(serializers.ModelSerializer):
     lead = serializers.StringRelatedField(read_only=True)
     members = serializers.SerializerMethodField()
@@ -83,24 +112,27 @@ class TeamSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'lead', 'members', 'created_at', 'updated_at']
 
     def get_members(self, obj):
-        # Fetch all users where team == this team
         users = User.objects.filter(team=obj)
         return [f"{user.first_name} {user.last_name} ({user.role})" for user in users]
 
-
+# ----------------------------
 # Bug Serializer
+# ----------------------------
 class BugSerializer(serializers.ModelSerializer):
     reported_by = serializers.StringRelatedField(read_only=True)
 
-    # Allow only developers to be assigned
     assigned_to = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role='developer'),
-        required=False
+        required=False,
+        allow_null=True
     )
 
-    # These are shown as string labels, not editable
-    team = serializers.StringRelatedField(read_only=True)
-    project = serializers.StringRelatedField(read_only=True)
+    project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())
+    team = serializers.PrimaryKeyRelatedField(
+        queryset=Team.objects.all(),
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Bug
@@ -113,7 +145,6 @@ class BugSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
 
-        # Only testers, customers, and admins can report bugs
         if user.role not in ['tester', 'customer', 'admin']:
             raise serializers.ValidationError("You are not allowed to report a bug.")
 
@@ -124,16 +155,16 @@ class BugSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         role = user.role
 
-        # Developers can only update status
+        # Developer can only update status
         if role == 'developer':
-            validated_data = {k: v for k, v in validated_data.items() if k == 'status'}
+            validated_data = {
+                k: v for k, v in validated_data.items() if k == 'status'
+            }
 
-        # Team Leads can update status and priority
-        elif role == 'team_lead':
+        # Team Lead or Team Manager can update status and priority
+        elif role in ['team_lead', 'team_manager']:
             validated_data = {
                 k: v for k, v in validated_data.items() if k in ['status', 'priority']
             }
-
-        # Others (admin, pm, em) can update anything (no filtering)
 
         return super().update(instance, validated_data)

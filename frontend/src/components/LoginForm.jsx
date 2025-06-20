@@ -1,37 +1,57 @@
 import { useState, useContext } from "react";
 import { Eye, EyeOff, User } from "lucide-react";
-import { AuthContext } from "../context/AuthContext";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom"; // Import for navigation
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
-function LoginForm({ intendedRole, onLoginSuccess, onLoginError }) {
+function LoginForm({ intendedRole }) {
   const { login } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [localError, setLocalError] = useState("");
-  const navigate = useNavigate(); // For navigation to reset password page
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLocalError("");
+    setError("");
+
+    if (!username || !password) {
+      setError("Please fill in both fields.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       await login(username, password);
-      onLoginSuccess();
-    } catch (err) {
-      console.error("Login error:", err);
-      setLocalError("Login failed. Check credentials.");
-      onLoginError();
+
+      const expectedRole = sessionStorage.getItem("intendedRole");
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+
+      if (expectedRole && storedUser?.role !== expectedRole) {
+        setError(`You must log in as a ${expectedRole.replace("_", " ")}`);
+        sessionStorage.removeItem("intendedRole");
+        setLoading(false);
+        return;
+      }
+
+      sessionStorage.removeItem("intendedRole");
+    } catch {
+      setError("Login failed. Check your credentials.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
   };
 
   const formattedRole = intendedRole
     ? intendedRole.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : "User";
-
-  const handleForgotPassword = () => {
-    navigate("/forgot-password"); // Navigate to the Forgot Password page
-  };
 
   return (
     <motion.div
@@ -45,8 +65,7 @@ function LoginForm({ intendedRole, onLoginSuccess, onLoginError }) {
           <User size={32} />
         </div>
         <h2 className="text-xl font-semibold text-gray-800">
-          Logging in as{" "}
-          <span className="text-blue-600">{formattedRole}</span>
+          Logging in as <span className="text-blue-600">{formattedRole}</span>
         </h2>
       </div>
 
@@ -77,19 +96,20 @@ function LoginForm({ intendedRole, onLoginSuccess, onLoginError }) {
           </span>
         </div>
 
+        {error && (
+          <p className="text-center text-red-500 font-medium">{error}</p>
+        )}
+
         <motion.button
           whileHover={{ scale: 1.05 }}
           type="submit"
-          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+          disabled={loading}
+          className={`w-full py-3 ${
+            loading ? "bg-blue-300" : "bg-blue-600"
+          } text-white font-medium rounded-lg transition`}
         >
-          Log In
+          {loading ? "Logging in..." : "Log In"}
         </motion.button>
-
-        {localError && (
-          <p className="text-center text-red-500 font-medium">
-            {localError}
-          </p>
-        )}
 
         <div className="text-center mt-4">
           <button

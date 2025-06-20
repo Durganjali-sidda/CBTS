@@ -4,7 +4,9 @@ import axios from "axios";
 const TeamLeadDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [teamBugs, setTeamBugs] = useState([]);
+  const [bugStatusFilter, setBugStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -14,7 +16,7 @@ const TeamLeadDashboard = () => {
         const userTeamId = currentUser?.team;
 
         if (!userTeamId) {
-          console.error("User team not found.");
+          setError("Team ID not found. Please check your user details.");
           setLoading(false);
           return;
         }
@@ -38,6 +40,7 @@ const TeamLeadDashboard = () => {
         setTeamMembers(teamUsers);
         setTeamBugs(teamBugList);
       } catch (err) {
+        setError("Error fetching team data. Please try again.");
         console.error("Error fetching team data", err);
       } finally {
         setLoading(false);
@@ -47,14 +50,31 @@ const TeamLeadDashboard = () => {
     fetchTeamData();
   }, []);
 
-  if (loading) return <p className="p-4">Loading Team Lead Dashboard...</p>;
-
   const bugStats = {
     total: teamBugs.length,
     open: teamBugs.filter(b => b.status === "open").length,
     inProgress: teamBugs.filter(b => b.status === "in_progress").length,
     closed: teamBugs.filter(b => b.status === "closed").length,
   };
+
+  // Filter bugs by status if a filter is applied
+  const filteredBugs = bugStatusFilter === "all" ? teamBugs : teamBugs.filter(bug => bug.status === bugStatusFilter);
+
+  if (loading) {
+    return (
+      <div className="p-4 text-center">
+        {/* Tailwind CSS Spinner */}
+        <div className="flex justify-center items-center space-x-2">
+          <div className="w-8 h-8 border-4 border-t-4 border-blue-600 border-solid rounded-full animate-spin"></div>
+          <p className="mt-2">Loading Team Lead Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <p className="p-4 text-red-500">{error}</p>;
+  }
 
   return (
     <div className="p-6 space-y-8">
@@ -80,6 +100,26 @@ const TeamLeadDashboard = () => {
       {/* Bug Statistics Section */}
       <section className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-semibold mb-4">Team Bug Overview</h2>
+
+        {/* Bug Status Filter */}
+        <div className="mb-4">
+          <label htmlFor="bug-status" className="text-sm font-semibold text-gray-700">
+            Filter by Status:
+          </label>
+          <select
+            id="bug-status"
+            value={bugStatusFilter}
+            onChange={(e) => setBugStatusFilter(e.target.value)}
+            className="ml-2 p-2 rounded-md border"
+          >
+            <option value="all">All</option>
+            <option value="open">Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+
+        {/* Bug Statistics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-100 p-4 rounded text-center">
             <h3 className="text-lg font-semibold">Total</h3>
@@ -98,6 +138,22 @@ const TeamLeadDashboard = () => {
             <p className="text-2xl text-red-600">{bugStats.closed}</p>
           </div>
         </div>
+
+        {/* Displaying filtered bugs */}
+        <h3 className="text-xl font-semibold mt-6">Filtered Bugs</h3>
+        {filteredBugs.length === 0 ? (
+          <p className="text-gray-600">No bugs match the selected status.</p>
+        ) : (
+          <ul className="space-y-2">
+            {filteredBugs.map((bug) => (
+              <li key={bug.id} className="border p-3 rounded bg-gray-50">
+                <h4 className="font-semibold text-gray-800">{bug.title}</h4>
+                <p className="text-gray-600">{bug.description}</p>
+                <p className="text-sm text-gray-500">Status: {bug.status}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

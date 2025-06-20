@@ -1,6 +1,5 @@
-// src/components/BugForm.jsx
-import { useState } from "react";
-import { createBug } from "../services/api";
+import { useEffect, useState } from "react";
+import { createBug, fetchProjects, fetchTeamMembers } from "../services/api";
 
 function BugForm({ onSuccess }) {
   const [formData, setFormData] = useState({
@@ -8,9 +7,29 @@ function BugForm({ onSuccess }) {
     description: "",
     status: "open",
     assigned_to: "",
+    project: "",
+    team: "",
   });
+
+  const [projects, setProjects] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const projectList = await fetchProjects();
+        setProjects(projectList);
+        // Fetch developers for assignment (optional enhancement)
+        const members = await fetchTeamMembers();
+        setTeamMembers(members);
+      } catch (err) {
+        console.error("Failed to load data", err);
+      }
+    };
+    loadInitialData();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,12 +38,17 @@ function BugForm({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // NOTE: your createBug(service) already attaches the JWT via axios interceptor.
-      //    You do not need to manually pass the token again here.
       await createBug(formData);
       setSuccess("Bug submitted successfully.");
       setError("");
-      setFormData({ title: "", description: "", status: "open", assigned_to: "" });
+      setFormData({
+        title: "",
+        description: "",
+        status: "open",
+        assigned_to: "",
+        project: "",
+        team: "",
+      });
       onSuccess && onSuccess();
     } catch (err) {
       console.error(err);
@@ -64,14 +88,36 @@ function BugForm({ onSuccess }) {
           <option value="in_progress">In Progress</option>
           <option value="closed">Closed</option>
         </select>
-        <input
-          type="text"
+
+        <select
+          name="project"
+          value={formData.project}
+          onChange={handleChange}
+          required
+          className="w-full p-2 border rounded"
+        >
+          <option value="">Select Project</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
+
+        <select
           name="assigned_to"
-          placeholder="Assign to (username)"
           value={formData.assigned_to}
           onChange={handleChange}
           className="w-full p-2 border rounded"
-        />
+        >
+          <option value="">Assign Developer</option>
+          {teamMembers.map((dev) => (
+            <option key={dev.id} value={dev.id}>
+              {dev.first_name} {dev.last_name} ({dev.email})
+            </option>
+          ))}
+        </select>
+
         <button
           type="submit"
           className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition"

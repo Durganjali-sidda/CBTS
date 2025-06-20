@@ -1,13 +1,16 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { logoutUser } from "../services/api"; // Make sure this path is correct
+import { logoutUser } from "../services/api"; // Ensure the correct path
 
 function LogoutButton() {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    const isConfirmed = window.confirm("Are you sure you want to log out?");
+    if (!isConfirmed) return; // Prevent logout if user cancels the prompt
+
     try {
-      await logoutUser(); // Invalidate token on server (optional but recommended)
+      await logoutUser(); // Call API to handle server-side logout
     } catch (error) {
       console.warn("Logout API failed (may already be logged out):", error);
     } finally {

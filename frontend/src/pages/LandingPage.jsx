@@ -54,6 +54,7 @@ export default function LandingPage() {
             <option value="tester">Tester</option>
             <option value="product_manager">Product Manager</option>
             <option value="Engineering_manager">Engineering Manager</option>
+            <option value="team_manager">Team Manager</option> 
           </select>
 
           <button

@@ -8,6 +8,7 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('product_manager', 'Product Manager'),
         ('engineering_manager', 'Engineering Manager'),
+        ('team_manager', 'Team Manager'),
         ('team_lead', 'Team Lead'),
         ('developer', 'Developer'),
         ('tester', 'Tester'),
@@ -37,9 +38,22 @@ class Team(models.Model):
     )
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
 
+    managers = models.ManyToManyField(
+        User,
+        limit_choices_to={'role': 'team_manager'},
+        related_name='managed_teams',
+        blank=True,
+    )
+
+    members = models.ManyToManyField(  # ✅ Add this
+        User,
+        limit_choices_to={'role': 'developer'},
+        related_name='teams',
+        blank=True,
+    )
+
     def __str__(self):
         return self.name
-
 
 # ---------------------------
 # Project Model
@@ -48,11 +62,21 @@ class Project(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # 👨‍💼 One product manager per project
     manager = models.ForeignKey(
         User,
         limit_choices_to={'role': 'product_manager'},
         on_delete=models.CASCADE,
         related_name='managed_projects'
+    )
+
+    # 👥 Multiple team managers under a product manager
+    team_managers = models.ManyToManyField(
+        User,
+        limit_choices_to={'role': 'team_manager'},
+        related_name='projects_managed_by_team_manager',
+        blank=True
     )
 
     def __str__(self):
@@ -91,7 +115,7 @@ class Bug(models.Model):
         User,
         related_name='reported_bugs',
         on_delete=models.CASCADE,
-        limit_choices_to={'role__in': ['tester', 'customer', 'team_lead', 'admin']}
+        limit_choices_to={'role__in': ['tester','team_manager', 'customer', 'team_lead', 'admin']}
     )
 
     # ✅ Only developers can be assigned to bugs

@@ -14,9 +14,19 @@ from rest_framework.decorators import action
 from .models import Bug, User, Project, Team
 from .serializers import BugSerializer, UserSerializer, ProjectSerializer, TeamSerializer
 from .permissions import (
-    IsProductManager, IsEngineeringManager, IsTeamLead,
-    IsDeveloper, IsTester, IsCustomer
+    IsProductManager, IsEngineeringManager, IsTeamLead,IsTeamManager, 
+    IsDeveloper, IsTester, IsCustomer, CombinedPermission
 )
+from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomLoginSerializer  # your serializer
+from django_filters.rest_framework import DjangoFilterBackend
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomLoginSerializer
 
 
 # ----------------------------
@@ -34,45 +44,88 @@ class CurrentUserView(APIView):
 # Bug ViewSet
 # ----------------------------
 class BugViewSet(viewsets.ModelViewSet):
-    serializer_class = BugSerializer
-    permission_classes = [IsAuthenticated]
+    queryset = Bug.objects.all()
+    serializer_class = BugSerializer  # ✅ Fix that was missing
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['assigned_to']  # ✅ Enables filtering by ?assigned_to=ID
 
     def get_queryset(self):
         user = self.request.user
-        role = user.role
+        if not user.is_authenticated:
+            return Bug.objects.none()
+
+        role = getattr(user, 'role', None)
+        queryset = Bug.objects.all()
+
+        assigned_to = self.request.query_params.get('assigned_to')
+        if assigned_to:
+            queryset = queryset.filter(assigned_to__id=assigned_to)
 
         if role in ['product_manager', 'engineering_manager']:
-            return Bug.objects.all()
+            return queryset
 
-        if role == 'team_lead':
-            return Bug.objects.filter(team=user.team)
+        if role in ['team_lead', 'team_manager']:
+            return queryset.filter(team=user.team)
 
         if role == 'developer':
-            return Bug.objects.filter(assigned_to=user) | Bug.objects.filter(team=user.team)
+            return queryset.filter(assigned_to=user) | queryset.filter(team=user.team)
 
         if role in ['tester', 'customer']:
-            return Bug.objects.filter(reported_by=user)
+            return queryset.filter(reported_by=user)
 
         return Bug.objects.none()
 
     def get_permissions(self):
         if self.action == 'list':
-            return [IsAuthenticated(), IsProductManager() | IsEngineeringManager()]
-        
-        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
-            return [IsAuthenticated(), IsProductManager() | IsEngineeringManager() |
-                    IsTeamLead() | IsDeveloper() | IsTester()]
-
-        if self.action == 'create':
-            return [IsAuthenticated(), IsTester() | IsCustomer() | 
-                    IsProductManager() | IsEngineeringManager()]
-
+            return [CombinedPermission(
+                IsProductManager,
+                IsEngineeringManager,
+                IsTeamLead,
+                IsTeamManager,
+                IsDeveloper
+            )]
+        elif self.action in ['retrieve', 'update', 'partial_update']:
+            return [CombinedPermission(
+                IsProductManager,
+                IsEngineeringManager,
+                IsTeamLead,
+                IsTeamManager,
+                IsDeveloper,
+                IsTester
+            )]
+        elif self.action == 'create':
+            return [CombinedPermission(
+                IsTester,
+                IsCustomer,
+                IsProductManager,
+                IsEngineeringManager,
+                IsTeamManager
+            )]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        serializer.save(reported_by=self.request.user)
+        user = self.request.user
+        assigned_to = serializer.validated_data.get('assigned_to')
+
+        if user.role == 'customer' and assigned_to:
+            raise PermissionDenied("Customers cannot assign bugs.")
+
+        if user.role in ['team_lead', 'team_manager'] and assigned_to:
+            if assigned_to.role != 'developer':
+                raise PermissionDenied("Can only assign to developers.")
+            if assigned_to.team != user.team:
+                raise PermissionDenied("Can only assign within your team.")
+
+        serializer.save(reported_by=user)
 
     def perform_update(self, serializer):
+        user = self.request.user
+        data = serializer.validated_data
+
+        if user.role == 'developer':
+            if set(data.keys()) - {'status'}:
+                raise PermissionDenied("Developers can only update bug status.")
+
         serializer.save()
 
 
@@ -89,7 +142,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsProductManager()]
 
         if self.action == 'list':
-            return [IsAuthenticated(), IsProductManager() | IsEngineeringManager()]
+            return [IsAuthenticated(), IsProductManager() | IsEngineeringManager() | IsTeamManager()]
 
         return [IsAuthenticated()]
 
@@ -102,10 +155,11 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.role == 'engineering_manager':
             return User.objects.exclude(role__in=['product_manager', 'engineering_manager'])
 
-        if user.role == 'team_lead':
+        if user.role in ['team_manager', 'team_lead']:
             return User.objects.filter(team=user.team)
 
         return User.objects.filter(id=user.id)
+
 
 
 # ----------------------------
@@ -124,14 +178,23 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if user.role == 'engineering_manager':
             return Project.objects.all()
 
+        if user.role == 'team_manager':
+            # Assuming Project has a `team` field
+            return Project.objects.filter(team=user.team)
+
         return Project.objects.none()
 
     def get_permissions(self):
-        if self.action in ['create', 'list', 'retrieve', 'update', 'partial_update', 'destroy']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsProductManager() | IsEngineeringManager()]
+
+        elif self.action in ['list', 'retrieve']:
+            return [IsAuthenticated(), IsProductManager() | IsEngineeringManager() | IsTeamManager()]
+
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
+        # Auto-assign the manager as the current user (Product Manager only)
         serializer.save(manager=self.request.user)
 
 
@@ -148,7 +211,7 @@ class TeamViewSet(viewsets.ModelViewSet):
         if user.role == 'engineering_manager':
             return Team.objects.all()
 
-        if user.role == 'team_lead':
+        if user.role in ['team_lead', 'team_manager']:
             return Team.objects.filter(lead=user)
 
         return Team.objects.none()
@@ -158,13 +221,12 @@ class TeamViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsEngineeringManager()]
 
         if self.action in ['list', 'retrieve', 'update', 'partial_update', 'destroy']:
-            return [IsAuthenticated(), IsEngineeringManager() | IsTeamLead()]
+            return [IsAuthenticated(), IsEngineeringManager() | IsTeamLead() | IsTeamManager()]
 
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
         serializer.save(lead=self.request.user)
-
 
 # ----------------------------
 # User-Specific Bugs ViewSet
@@ -172,19 +234,18 @@ class TeamViewSet(viewsets.ModelViewSet):
 class UserBugsViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=['get'])
-    def list_bugs(self, request, pk=None):
-        try:
-            user = User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            return Response({"detail": "User not found"}, status=404)
+    @action(detail=True, methods=['get'], url_path='bugs')
+    def bugs(self, request, pk=None):
+        user = get_object_or_404(User, pk=pk)
 
+        # Role-based access: Only PM/EM or the user themselves
         if request.user.role not in ['product_manager', 'engineering_manager'] and request.user != user:
             return Response({"detail": "Permission denied"}, status=403)
 
         bugs = Bug.objects.filter(assigned_to=user)
         serializer = BugSerializer(bugs, many=True)
         return Response(serializer.data)
+
 
 
 # ----------------------------

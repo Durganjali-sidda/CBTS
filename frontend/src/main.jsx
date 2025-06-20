@@ -1,62 +1,63 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
+// Pages
 import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
 import BugListPage from './pages/BugListPage';
+import BugDetailsPage from './pages/BugDetailsPage';
 import CreateBugPage from './pages/CreateBugPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import ForgotPassword from './components/ForgotPassword';
 
+// Dashboards
 import ProductManagerDashboard from './pages/dashboard/ProductManagerDashboard';
 import EngineeringManagerDashboard from './pages/dashboard/EngineeringManagerDashboard';
 import TeamLeadDashboard from './pages/dashboard/TeamLeadDashboard';
 import DeveloperDashboard from './pages/dashboard/DeveloperDashboard';
 import TesterDashboard from './pages/dashboard/TesterDashboard';
 import CustomerDashboard from './pages/dashboard/CustomerDashboard';
+import TeamManagerDashboard from './pages/dashboard/TeamManagerDashboard';
 
+// Routing Guards
 import PrivateRoute from './components/PrivateRoute';
 import RoleBasedRoute from './routes/RoleBasedRoute';
-import Layout from './components/Layout'; // ✅ Layout with Navbar & Footer
+import Layout from './components/Layout';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />, // This contains only <AuthProvider><Outlet /></AuthProvider>
+    element: <App />, // AuthProvider wraps Outlet here
     children: [
-      // ❌ No Navbar
       { index: true, element: <LandingPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'unauthorized', element: <UnauthorizedPage /> },
 
-      // ✅ Authenticated Routes inside Layout
       {
-        path: '/',
+        path: '',
         element: (
           <PrivateRoute>
             <Layout />
           </PrivateRoute>
         ),
         children: [
-          { path: 'bugs', element: <BugListPage /> },
+          {
+            path: 'bugs',
+            element: <Outlet />, // Parent for bug routes
+            children: [
+              { index: true, element: <BugListPage /> },
+              { path: ':id', element: <BugDetailsPage /> },
+            ],
+          },
           {
             path: 'create-bug',
             element: (
-              <RoleBasedRoute allowedRoles={['developer']}>
+              <RoleBasedRoute allowedRoles={['tester', 'customer', 'team_lead', 'admin']}>
                 <CreateBugPage />
-              </RoleBasedRoute>
-            ),
-          },
-          {
-            path: 'admin',
-            element: (
-              <RoleBasedRoute allowedRoles={['product_manager']}>
-                <AdminDashboardPage />
               </RoleBasedRoute>
             ),
           },
@@ -105,6 +106,14 @@ const router = createBrowserRouter([
             element: (
               <RoleBasedRoute allowedRoles={['customer']}>
                 <CustomerDashboard />
+              </RoleBasedRoute>
+            ),
+          },
+          {
+            path: 'dashboard/team-manager',
+            element: (
+              <RoleBasedRoute allowedRoles={['team_manager']}>
+                <TeamManagerDashboard />
               </RoleBasedRoute>
             ),
           },

@@ -5,6 +5,7 @@ const ProductManagerDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [bugs, setBugs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -23,6 +24,7 @@ const ProductManagerDashboard = () => {
         setProjects(projectsRes.data);
         setBugs(bugsRes.data);
       } catch (error) {
+        setError("There was an issue fetching the data. Please try again later.");
         console.error("Error fetching Product Manager data", error);
       } finally {
         setLoading(false);
@@ -39,7 +41,21 @@ const ProductManagerDashboard = () => {
     inProgress: bugs.filter((bug) => bug.status === "in_progress").length,
   };
 
-  if (loading) return <p className="p-4">Loading Product Manager Dashboard...</p>;
+  if (loading) {
+    return (
+      <div className="p-4 text-center">
+        {/* Tailwind CSS Spinner */}
+        <div className="flex justify-center items-center space-x-2">
+          <div className="w-8 h-8 border-4 border-t-4 border-blue-600 border-solid rounded-full animate-spin"></div>
+          <p className="mt-2">Loading Product Manager Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <p className="p-4 text-red-500">{error}</p>;
+  }
 
   return (
     <div className="p-6 space-y-8">

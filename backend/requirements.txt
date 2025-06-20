@@ -8,4 +8,6 @@ dj-rest-auth
 django-allauth
 requests
 django-extensions
+django-filter
+
 

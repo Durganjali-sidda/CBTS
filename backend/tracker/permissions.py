@@ -1,25 +1,47 @@
 from rest_framework import permissions
+from rest_framework.permissions import BasePermission
 
-class IsProductManager(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.role == 'product_manager'
+class CombinedPermission(BasePermission):
+    def __init__(self, *perms):
+        self.perms = perms
 
-class IsEngineeringManager(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'engineering_manager'
+        return request.user.is_authenticated and any(
+            perm().has_permission(request, view) for perm in self.perms
+        )
 
-class IsTeamLead(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return request.user.role == 'team_lead'
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated and any(
+            perm().has_object_permission(request, view, obj)
+            for perm in self.perms
+            if hasattr(perm(), 'has_object_permission')
+        )
 
-class IsDeveloper(permissions.BasePermission):
+class IsProductManager(BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'developer'
+        return request.user.is_authenticated and request.user.role == 'product_manager'
 
-class IsTester(permissions.BasePermission):
+class IsEngineeringManager(BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'tester'
+        return request.user.is_authenticated and request.user.role == 'engineering_manager'
+    
+class IsTeamManager(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'team_manager'
 
-class IsCustomer(permissions.BasePermission):
+
+class IsTeamLead(BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'customer'
+        return request.user.is_authenticated and request.user.role == 'team_lead'
+
+class IsDeveloper(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'developer'
+
+class IsTester(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'tester'
+
+class IsCustomer(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'customer'

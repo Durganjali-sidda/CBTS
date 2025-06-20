@@ -1,28 +1,27 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom"; // For navigation
+import { useNavigate } from "react-router-dom";
+import { sendPasswordResetEmail } from "../services/api"; // Import the service function
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [localError, setLocalError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const navigate = useNavigate(); // Used to navigate after successful reset request
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError("");
     setSuccessMessage("");
 
-    // Simulate the API call to send reset email
     try {
-      // Call your API here to send a reset password email
-      // e.g., await api.sendPasswordResetEmail(email);
-
+      await sendPasswordResetEmail(email);
       setSuccessMessage("If an account with that email exists, a reset link has been sent.");
-      setEmail(""); // Reset email input field
+      setEmail(""); // Clear the field after success
     } catch (err) {
       console.error("Forgot Password error:", err);
-      setLocalError("Error in sending reset email. Try again later.");
+      const errMsg = err.response?.data?.email?.[0] || "Error sending reset email.";
+      setLocalError(errMsg);
     }
   };
 

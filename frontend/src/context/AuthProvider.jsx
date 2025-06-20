@@ -1,3 +1,4 @@
+// src/context/AuthProvider.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loginUser, fetchCurrentUser } from '../services/api';
@@ -6,13 +7,15 @@ import { AuthContext } from './AuthContext';
 export default function AuthProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user'); // Also clear user data
+    localStorage.removeItem('user');
     setAccessToken(null);
     setUser(null);
     navigate('/login');
@@ -38,6 +41,9 @@ export default function AuthProvider({ children }) {
       case 'customer':
         navigate('/dashboard/customer');
         break;
+      case 'team_manager':
+        navigate('/dashboard/team-manager');
+        break;
       default:
         navigate('/unauthorized');
     }
@@ -45,7 +51,10 @@ export default function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
     setAccessToken(token);
 
@@ -54,22 +63,24 @@ export default function AuthProvider({ children }) {
         const resp = await fetchCurrentUser();
         const currentUser = resp.data;
         setUser(currentUser);
-        localStorage.setItem('user', JSON.stringify(currentUser)); // ✅ Save user in localStorage
+        localStorage.setItem('user', JSON.stringify(currentUser));
 
-        const publicPaths = ['/', '/login'];
-        if (!publicPaths.includes(location.pathname)) {
+        // ✅ FIX: Only redirect if coming from login page
+        if (location.state?.fromLogin) {
           redirectToDashboard(currentUser?.role);
         }
       } catch (err) {
         console.error('Failed to fetch current user', err);
         handleLogout();
+      } finally {
+        setLoading(false);
       }
     })();
-  }, [redirectToDashboard, handleLogout, location.pathname]);
+  }, [redirectToDashboard, handleLogout, location]);
 
-  const login = async (identifier, password) => {
+  const login = async (username, password) => {
     try {
-      const resp = await loginUser({ username: identifier, password });
+      const resp = await loginUser({ username, password });
       const { access, refresh } = resp.data;
 
       localStorage.setItem('access_token', access);
@@ -79,9 +90,10 @@ export default function AuthProvider({ children }) {
       const userResp = await fetchCurrentUser();
       const loggedInUser = userResp.data;
       setUser(loggedInUser);
-      localStorage.setItem('user', JSON.stringify(loggedInUser)); // ✅ Save user in localStorage
+      localStorage.setItem('user', JSON.stringify(loggedInUser));
 
-      redirectToDashboard(loggedInUser?.role);
+      // ✅ pass a flag to know it's a login
+      navigate('/', { state: { fromLogin: true } });
     } catch (err) {
       console.error('Login failed', err);
       throw err;
@@ -89,7 +101,16 @@ export default function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout: handleLogout, accessToken }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout: handleLogout,
+        accessToken,
+        isAuthenticated: !!accessToken,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

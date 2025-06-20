@@ -46,6 +46,28 @@ const EngineeringManagerDashboard = () => {
     inProgress: bugs.filter((b) => b.status === "in_progress").length,
   };
 
+  // Calculate Project-level Bug Stats
+  const getProjectBugStats = (projectId) => {
+    const projectBugs = bugs.filter((bug) => bug.project === projectId);
+    return {
+      total: projectBugs.length,
+      open: projectBugs.filter((b) => b.status === "open").length,
+      closed: projectBugs.filter((b) => b.status === "closed").length,
+      inProgress: projectBugs.filter((b) => b.status === "in_progress").length,
+    };
+  };
+
+  // Calculate Team-level Bug Stats
+  const getTeamBugStats = (teamId) => {
+    const teamBugs = bugs.filter((bug) => bug.team === teamId);
+    return {
+      total: teamBugs.length,
+      open: teamBugs.filter((b) => b.status === "open").length,
+      closed: teamBugs.filter((b) => b.status === "closed").length,
+      inProgress: teamBugs.filter((b) => b.status === "in_progress").length,
+    };
+  };
+
   return (
     <div className="p-6 space-y-8">
       <h1 className="text-3xl font-bold text-indigo-700">Engineering Manager Dashboard</h1>
@@ -57,22 +79,43 @@ const EngineeringManagerDashboard = () => {
           <p className="text-gray-500">No projects available.</p>
         ) : (
           <ul className="space-y-3">
-            {projects.map((project) => (
-              <li key={project.id} className="border rounded p-3 hover:bg-gray-50">
-                <h3 className="text-lg font-semibold">{project.name}</h3>
-                <p className="text-gray-700">{project.description || "No description provided."}</p>
-              </li>
-            ))}
+            {projects.map((project) => {
+              const projectStats = getProjectBugStats(project.id);
+              return (
+                <li key={project.id} className="border rounded p-3 hover:bg-gray-50">
+                  <h3 className="text-lg font-semibold">{project.name}</h3>
+                  <p className="text-gray-700">{project.description || "No description provided."}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">Total Bugs</h4>
+                      <p className="text-lg text-indigo-600">{projectStats.total}</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">Open</h4>
+                      <p className="text-lg text-green-600">{projectStats.open}</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">In Progress</h4>
+                      <p className="text-lg text-yellow-600">{projectStats.inProgress}</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">Closed</h4>
+                      <p className="text-lg text-red-600">{projectStats.closed}</p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
 
-      {/* Bug Stats */}
+      {/* Bug Stats Overview */}
       <section className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Bug Overview</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-100 rounded p-4 text-center">
-            <h3 className="text-lg font-bold">Total</h3>
+            <h3 className="text-lg font-bold">Total Bugs</h3>
             <p className="text-xl text-indigo-600">{bugStats.total}</p>
           </div>
           <div className="bg-green-100 rounded p-4 text-center">
@@ -97,12 +140,33 @@ const EngineeringManagerDashboard = () => {
           <p className="text-gray-500">No teams found.</p>
         ) : (
           <ul className="space-y-3">
-            {teams.map((team) => (
-              <li key={team.id} className="border rounded p-3 hover:bg-gray-50">
-                <h3 className="text-lg font-semibold">{team.name}</h3>
-                <p className="text-gray-700">{team.description || "No description provided."}</p>
-              </li>
-            ))}
+            {teams.map((team) => {
+              const teamStats = getTeamBugStats(team.id);
+              return (
+                <li key={team.id} className="border rounded p-3 hover:bg-gray-50">
+                  <h3 className="text-lg font-semibold">{team.name}</h3>
+                  <p className="text-gray-700">{team.description || "No description provided."}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">Total Bugs</h4>
+                      <p className="text-lg text-indigo-600">{teamStats.total}</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">Open</h4>
+                      <p className="text-lg text-green-600">{teamStats.open}</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">In Progress</h4>
+                      <p className="text-lg text-yellow-600">{teamStats.inProgress}</p>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-md font-bold">Closed</h4>
+                      <p className="text-lg text-red-600">{teamStats.closed}</p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

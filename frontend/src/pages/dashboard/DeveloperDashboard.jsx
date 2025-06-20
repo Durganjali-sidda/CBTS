@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const DeveloperDashboard = () => {
   const [assignedBugs, setAssignedBugs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDeveloperBugs = async () => {
@@ -26,7 +25,6 @@ const DeveloperDashboard = () => {
             },
           }
         );
-
         setAssignedBugs(res.data);
       } catch (err) {
         console.error("Error fetching assigned bugs", err);
@@ -73,10 +71,14 @@ const DeveloperDashboard = () => {
             {assignedBugs.map((bug) => (
               <li
                 key={bug.id}
-                onClick={() => navigate(`/bug/${bug.id}`)}
-                className="cursor-pointer border p-4 rounded-lg shadow-sm hover:bg-gray-50 transition"
+                className="border p-4 rounded-lg shadow-sm hover:bg-gray-50 transition"
               >
-                <h3 className="text-lg font-bold text-blue-700">{bug.title}</h3>
+                <Link
+                  to={`/bugs/${bug.id}`}
+                  className="text-lg font-bold text-blue-700 hover:underline"
+                >
+                  {bug.title}
+                </Link>
                 <p className="text-sm text-gray-700">
                   <strong>Status:</strong> {bug.status}
                 </p>

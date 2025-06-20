@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django_filters',
 
     # Third-party apps
     'corsheaders',
@@ -117,11 +118,11 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # ✅ Allauth (new format)
-ACCOUNT_AUTHENTICATION_METHOD = 'username'
+ACCOUNT_LOGIN_METHODS = {'username'}
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = True
+# ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
 
 # ✅ dj-rest-auth & JWT
 REST_USE_JWT = True
@@ -137,6 +138,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+
 }
 
 SIMPLE_JWT = {

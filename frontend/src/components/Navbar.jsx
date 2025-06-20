@@ -26,49 +26,63 @@ const Navbar = () => {
         <span className="text-xl font-semibold">Bug Tracker</span>
 
         <div className="space-x-4 flex items-center">
-          {/* Common Link */}
-          <Link to="/bugs" className="hover:underline">Bugs</Link>
+          {/* Show "Bugs" link to all except developers */}
+          {role !== 'developer' && (
+            <Link to="/bugs" className="hover:underline">
+              Bugs
+            </Link>
+          )}
 
-          {/* Developer-specific: Assigned Bugs view only */}
+          {/* Developer Dashboard */}
           {role === 'developer' && (
-            <Link to="/dashboard/developer" className="hover:underline">Dashboard</Link>
+            <Link to={dashboardPath} className="hover:underline">
+              Dashboard
+            </Link>
           )}
 
           {/* Team Lead */}
           {role === 'team_lead' && (
-            <Link to={dashboardPath} className="hover:underline">Team Dashboard</Link>
+            <Link to={dashboardPath} className="hover:underline">
+              Team Dashboard
+            </Link>
           )}
 
           {/* Product Manager */}
           {role === 'product_manager' && (
             <>
-              <Link to="/create-project" className="hover:underline">Create Project</Link>
-              <Link to="/create-user" className="hover:underline">Add User</Link>
-              <Link to={dashboardPath} className="hover:underline">Dashboard</Link>
+              <Link to="/create-project" className="hover:underline">
+                Create Project
+              </Link>
+              <Link to="/create-user" className="hover:underline">
+                Add User
+              </Link>
+              <Link to={dashboardPath} className="hover:underline">
+                Dashboard
+              </Link>
             </>
           )}
 
           {/* Engineering Manager */}
           {role === 'engineering_manager' && (
             <>
-              <Link to="/teams" className="hover:underline">Teams</Link>
-              <Link to={dashboardPath} className="hover:underline">Dashboard</Link>
+              <Link to="/teams" className="hover:underline">
+                Teams
+              </Link>
+              <Link to={dashboardPath} className="hover:underline">
+                Dashboard
+              </Link>
             </>
           )}
 
-          {/* Tester */}
-          {role === 'tester' && (
+          {/* Tester & Customer */}
+          {(role === 'tester' || role === 'customer') && (
             <>
-              <Link to="/create-bug" className="hover:underline">Report Bug</Link>
-              <Link to={dashboardPath} className="hover:underline">Dashboard</Link>
-            </>
-          )}
-
-          {/* Customer */}
-          {role === 'customer' && (
-            <>
-              <Link to="/create-bug" className="hover:underline">Report Bug</Link>
-              <Link to={dashboardPath} className="hover:underline">Dashboard</Link>
+              <Link to="/create-bug" className="hover:underline">
+                Report Bug
+              </Link>
+              <Link to={dashboardPath} className="hover:underline">
+                Dashboard
+              </Link>
             </>
           )}
 

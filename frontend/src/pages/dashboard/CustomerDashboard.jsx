@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 const CustomerDashboard = () => {
   const [reportedBugs, setReportedBugs] = useState([]);
@@ -53,9 +54,9 @@ const CustomerDashboard = () => {
                 key={bug.id}
                 className="border rounded p-4 bg-gray-50 hover:bg-gray-100 transition"
               >
-                <h3 className="text-lg font-semibold text-gray-800">
+                <Link to={`/bug/${bug.id}`} className="text-lg font-semibold text-blue-700 hover:underline">
                   {bug.title}
-                </h3>
+                </Link>
                 <p className="text-sm text-gray-600">
                   Status:{" "}
                   <span
