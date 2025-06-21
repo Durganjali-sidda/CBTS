@@ -15,7 +15,8 @@ import axios from 'axios';
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
-
+// ✅ Add this to debug the backend URL used
+console.log('🌐 Backend API URL:', import.meta.env.VITE_API_URL);
 // Attach token to every request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
