@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'cbts.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'cbts_db',
-        'USER': 'cbtsuser',
-        'PASSWORD': 'cbtspassword',
-        'HOST': 'db',  # Docker service name
-        'PORT': '5432',
+        'NAME': 'postgres',
+        'USER': 'postgres.lhstorhrkgcfeiiidjze',
+        'PASSWORD': 'Lulumall@1234',
+        'HOST': 'aws-0-ap-south-1.pooler.supabase.com',  # ✅ USE THIS
+        'PORT': '6543',
     }
 }
 
