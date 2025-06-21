@@ -2,13 +2,18 @@
 import axios from 'axios';
 
 // Check if we're in Docker environment
-const isDocker = window.location.hostname !== 'localhost';
+// const isDocker = window.location.hostname !== 'localhost';
 
-// Create API instance
+// // Create API instance
+// const API = axios.create({
+//   baseURL: isDocker
+//     ? import.meta.env.VITE_API_DOCKER
+//     : import.meta.env.VITE_API_LOCAL,
+// });
+
+// Always use the value from .env file in production
 const API = axios.create({
-  baseURL: isDocker
-    ? import.meta.env.VITE_API_DOCKER
-    : import.meta.env.VITE_API_LOCAL,
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 // Attach token to every request
