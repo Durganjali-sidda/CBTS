@@ -7,7 +7,11 @@ SECRET_KEY = 'your-secret-key-here'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'cbts-backend.onrender.com',  # Your Render domain
+    'localhost',
+    '127.0.0.1',
+]
 
 # Installed Apps
 INSTALLED_APPS = [
