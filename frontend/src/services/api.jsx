@@ -1,22 +1,15 @@
 // src/services/api.js
 import axios from 'axios';
 
-// Check if we're in Docker environment
-// const isDocker = window.location.hostname !== 'localhost';
+// ✅ Get API URL from global runtime config or fallback
+const baseURL =
+  window.__ENV__?.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-// // Create API instance
-// const API = axios.create({
-//   baseURL: isDocker
-//     ? import.meta.env.VITE_API_DOCKER
-//     : import.meta.env.VITE_API_LOCAL,
-// });
+console.log('🌐 Backend API URL:', baseURL);
 
-// Always use the value from .env file in production
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL,
 });
-// ✅ Add this to debug the backend URL used
-console.log('🌐 Backend API URL:', import.meta.env.VITE_API_URL);
 // Attach token to every request
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');

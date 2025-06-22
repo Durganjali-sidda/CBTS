@@ -8,6 +8,15 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- ✅ Inject runtime environment variables BEFORE main.jsx -->
+    <script>
+      window.__ENV__ = {
+        VITE_API_URL: "https://cbts-backend.onrender.com/api"
+      };
+    </script>
+
+    <!-- ✅ Load React/Vite app after ENV setup -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
