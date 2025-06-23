@@ -1,3 +1,4 @@
+import os  # ✅ Needed for STATIC_ROOT
 from pathlib import Path
 from datetime import timedelta
 
@@ -59,7 +60,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'cbts.urls'
 
-# ✅ TEMPLATES (needed for admin and allauth)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -78,14 +78,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cbts.wsgi.application'
 
-# Database (PostgreSQL for Docker)
+# Database (PostgreSQL for Docker/Production)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
         'USER': 'postgres.lhstorhrkgcfeiiidjze',
         'PASSWORD': 'Lulumall@1234',
-        'HOST': 'aws-0-ap-south-1.pooler.supabase.com',  # ✅ USE THIS
+        'HOST': 'aws-0-ap-south-1.pooler.supabase.com',
         'PORT': '6543',
     }
 }
@@ -115,21 +115,19 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://frontend:80',
-    "https://cbts-frontend.onrender.com",  # ✅ deployed frontend
+    'https://cbts-frontend.onrender.com',
 ]
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://frontend:80',
-    "https://cbts-frontend.onrender.com",  # ✅ deployed frontend
+    'https://cbts-frontend.onrender.com',
 ]
 
-# ✅ Allauth (new format)
+# ✅ Allauth
 ACCOUNT_LOGIN_METHODS = {'username'}
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-# ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
-
 
 # ✅ dj-rest-auth & JWT
 REST_USE_JWT = True
@@ -145,8 +143,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
-
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 SIMPLE_JWT = {
@@ -159,10 +156,8 @@ SIMPLE_JWT = {
 }
 
 REST_AUTH_SERIALIZERS = {
-    # "LOGIN_SERIALIZER": "tracker.serializers.CustomLoginSerializer",
     "LOGIN_SERIALIZER": "dj_rest_auth.jwt_auth.serializers.JWTSerializer",
 }
-
 
 # Registration serializer
 REST_AUTH_REGISTER_SERIALIZERS = {
@@ -187,4 +182,3 @@ CORS_ALLOW_HEADERS = [
     "x-csrftoken",
     "x-requested-with",
 ]
-
