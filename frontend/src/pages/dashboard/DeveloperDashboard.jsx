@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchBugs } from "../services/api"; // 🔁 use centralized API instance
+import { fetchBugs } from "../../services/api"; // 🔁 use centralized API instance
 
 const DeveloperDashboard = () => {
   const [assignedBugs, setAssignedBugs] = useState([]);

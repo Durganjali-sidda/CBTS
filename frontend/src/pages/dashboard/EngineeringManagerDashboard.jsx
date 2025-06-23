@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchProjects, fetchBugs, fetchTeamMembers } from "../services/api";
+import { fetchProjects, fetchBugs, fetchTeamMembers } from "../../services/api";
 
 const EngineeringManagerDashboard = () => {
   const [projects, setProjects] = useState([]);

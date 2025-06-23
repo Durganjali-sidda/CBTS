@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchTeams, fetchUsers, fetchBugs, createBug, assignBugToUser } from "../services/api";
+import { fetchTeams, fetchUsers, fetchBugs, createBug, assignBugToUser } from "../../services/api";
 
 const TeamManagerDashboard = () => {
   const [teams, setTeams] = useState([]);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createBug, fetchBugs } from "../services/api"; // use centralized API logic
+import { createBug, fetchBugs } from "../../services/api"; // use centralized API logic
 
 const TesterDashboard = () => {
   const [bugTitle, setBugTitle] = useState("");

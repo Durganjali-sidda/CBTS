@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchBugs } from "../services/api";
+import { fetchBugs } from "../../services/api";
 
 const CustomerDashboard = () => {
   const [reportedBugs, setReportedBugs] = useState([]);
