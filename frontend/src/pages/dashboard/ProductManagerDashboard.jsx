@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchProjects, fetchBugs } from "../services/api";
+import { fetchProjects, fetchBugs } from "../../services/api";
 
 const ProductManagerDashboard = () => {
   const [projects, setProjects] = useState([]);
