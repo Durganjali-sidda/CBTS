@@ -59,6 +59,7 @@ export const deleteBug = (id) => API.delete(`bugs/${id}/`);
 // ================== ✅ Team + Project APIs ==================
 export const fetchTeamMembers = () => API.get('teams/members/');
 export const fetchProjects = () => API.get('projects/');
+export const fetchTeams = () => API.get('teams/');  // ✅ Add this line
 
 // ================== ✅ Auth APIs ==================
 export const loginUser = ({ username, password }) =>
@@ -75,3 +76,6 @@ export const fetchCurrentUser = () => API.get('auth/user/'); // ✅ REQUIRED
 
 // ================== ✅ Admin-only APIs ==================
 export const fetchAllUsers = () => API.get('auth/users/'); // ✅ Your missing function restored
+
+export const assignBugToUser = (bugId, userId) =>
+  API.patch(`bugs/${bugId}/`, { assigned_to: userId });

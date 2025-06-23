@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { fetchTeams, fetchUsers, fetchBugs, createBug, assignBugToUser } from "../../services/api";
+import { fetchTeams, fetchAllUsers, fetchBugs, createBug, assignBugToUser } from "../../services/api";
+
 
 const TeamManagerDashboard = () => {
   const [teams, setTeams] = useState([]);
@@ -20,7 +21,7 @@ const TeamManagerDashboard = () => {
       try {
         const [teamsRes, membersRes, bugsRes] = await Promise.all([
           fetchTeams(),
-          fetchUsers(),
+          fetchAllUsers(),
           fetchBugs(),
         ]);
 
