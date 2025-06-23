@@ -100,6 +100,7 @@ AUTHENTICATION_BACKENDS = [
 
 # Static files
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Language & timezone
 LANGUAGE_CODE = 'en-us'
