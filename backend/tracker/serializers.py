@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from dj_rest_auth.serializers import LoginSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Bug, Project, Team
 from django.contrib.auth import get_user_model
 
@@ -8,21 +8,23 @@ User = get_user_model()
 # ----------------------------
 # Custom Login Serializer
 # ----------------------------
-class CustomLoginSerializer(LoginSerializer):
+class CustomLoginSerializer(TokenObtainPairSerializer):
     """
     Custom login serializer using username and password only.
     """
-    def get_fields(self):
-        fields = super().get_fields()
-        fields.pop('email', None)
-        fields['username'] = serializers.CharField(required=True)
-        fields['password'] = serializers.CharField(
-            required=True,
-            style={'input_type': 'password'},
-            write_only=True
-        )
-        return fields
+    username_field = 'username'
 
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+
+        # You can add any additional data you want returned on login
+        data['user'] = {
+            'id': user.id,
+            'username': user.username,
+            'role': user.role,
+        }
+        return data
 
 # ----------------------------
 # Basic Nested Serializers
