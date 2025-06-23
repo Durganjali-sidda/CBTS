@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchTeams, fetchUsers, fetchBugs, createBug, assignBugToUser } from "../services/api";
 
 const TeamManagerDashboard = () => {
   const [teams, setTeams] = useState([]);
   const [members, setMembers] = useState([]);
   const [bugs, setBugs] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [newBug, setNewBug] = useState({
     title: "",
     description: "",
@@ -17,19 +18,10 @@ const TeamManagerDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
-
-        // Fetch teams, members, and bugs data
         const [teamsRes, membersRes, bugsRes] = await Promise.all([
-          axios.get("http://localhost:8000/api/teams/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:8000/api/users/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:8000/api/bugs/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetchTeams(),
+          fetchUsers(),
+          fetchBugs(),
         ]);
 
         setTeams(teamsRes.data);
@@ -45,38 +37,27 @@ const TeamManagerDashboard = () => {
     fetchData();
   }, []);
 
-  // Handle bug creation form
+  // Create a new bug
   const handleBugCreation = async () => {
     try {
-      const token = localStorage.getItem("access_token");
-      const response = await axios.post(
-        "http://localhost:8000/api/bugs/",
-        newBug,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setBugs([...bugs, response.data]); // Update bugs list with newly created bug
-      setNewBug({ title: "", description: "", status: "open", team: "", assigned_to: "" });
+      const res = await createBug(newBug);
+      setBugs([...bugs, res.data]);
+      setNewBug({
+        title: "",
+        description: "",
+        status: "open",
+        team: "",
+        assigned_to: "",
+      });
     } catch (error) {
       console.error("Error creating bug", error);
     }
   };
 
-  // Handle bug assignment
+  // Assign a bug to a user
   const handleAssignBug = async (bugId, assignedTo) => {
     try {
-      const token = localStorage.getItem("access_token");
-      await axios.patch(
-        `http://localhost:8000/api/bugs/${bugId}/`,
-        { assigned_to: assignedTo },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      // Update bugs state after assignment
+      await assignBugToUser(bugId, assignedTo);
       setBugs((prevBugs) =>
         prevBugs.map((bug) =>
           bug.id === bugId ? { ...bug, assigned_to: assignedTo } : bug
@@ -93,24 +74,24 @@ const TeamManagerDashboard = () => {
     <div className="p-6 space-y-8">
       <h1 className="text-3xl font-bold text-blue-700">Team Manager Dashboard</h1>
 
-      {/* Teams Section */}
       <section className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-semibold mb-4">Teams</h2>
         {teams.length === 0 ? (
           <p className="text-gray-600">No teams found.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-6">
             {teams.map((team) => {
               const teamMembers = members.filter((member) => member.team === team.id);
+              const unassignedBugs = bugs.filter((bug) => bug.team === team.id && !bug.assigned_to);
               return (
-                <li key={team.id} className="border p-3 rounded hover:bg-gray-50">
-                  <h3 className="text-lg font-semibold">{team.name}</h3>
-                  <p className="text-gray-700">{team.description || "No description available."}</p>
+                <li key={team.id} className="border p-4 rounded-lg bg-gray-50 shadow-sm">
+                  <h3 className="text-xl font-semibold">{team.name}</h3>
+                  <p className="text-gray-600">{team.description || "No description available."}</p>
 
                   {/* Team Members */}
                   <div className="mt-4">
-                    <h4 className="font-semibold">Team Members:</h4>
-                    <ul className="list-disc pl-5">
+                    <h4 className="font-semibold mb-1">Team Members:</h4>
+                    <ul className="list-disc pl-5 text-sm text-gray-700">
                       {teamMembers.map((member) => (
                         <li key={member.id}>{member.username}</li>
                       ))}
@@ -118,48 +99,38 @@ const TeamManagerDashboard = () => {
                   </div>
 
                   {/* Assign Bug */}
-                  <div className="mt-4">
-                    <h4 className="font-semibold">Assign Bug:</h4>
-                    <select
-                      className="border rounded p-2"
-                      onChange={() => setNewBug({ ...newBug, team: team.id })}
-                    >
-                      <option value="">Select Bug</option>
-                      {bugs
-                        .filter((bug) => bug.team === team.id && !bug.assigned_to)
-                        .map((bug) => (
-                          <option key={bug.id} value={bug.id}>
-                            {bug.title}
-                          </option>
-                        ))}
-                    </select>
-                    <select
-                      className="border rounded p-2 mt-2"
-                      onChange={(e) => setNewBug({ ...newBug, assigned_to: e.target.value })}
-                    >
-                      <option value="">Select Member</option>
-                      {teamMembers.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.username}
-                        </option>
+                  {unassignedBugs.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="font-semibold mb-2">Assign Bug:</h4>
+                      {unassignedBugs.map((bug) => (
+                        <div key={bug.id} className="mb-4 border rounded p-3 bg-white shadow">
+                          <p className="font-medium">{bug.title}</p>
+                          <select
+                            className="border rounded p-2 mt-2 w-full"
+                            onChange={(e) => handleAssignBug(bug.id, e.target.value)}
+                          >
+                            <option value="">Assign to member</option>
+                            {teamMembers.map((member) => (
+                              <option key={member.id} value={member.id}>
+                                {member.username}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       ))}
-                    </select>
-                    <button
-                      className="bg-blue-600 text-white mt-3 p-2 rounded"
-                      onClick={() => handleAssignBug(newBug.team, newBug.assigned_to)}
-                    >
-                      Assign Bug
-                    </button>
-                  </div>
+                    </div>
+                  )}
 
-                  {/* Create New Bug */}
-                  <div className="mt-4">
-                    <h4 className="font-semibold">Create New Bug:</h4>
+                  {/* Create Bug */}
+                  <div className="mt-6">
+                    <h4 className="font-semibold mb-2">Create New Bug:</h4>
                     <input
                       type="text"
                       placeholder="Bug Title"
                       value={newBug.title}
-                      onChange={(e) => setNewBug({ ...newBug, title: e.target.value })}
+                      onChange={(e) =>
+                        setNewBug({ ...newBug, title: e.target.value, team: team.id })
+                      }
                       className="border rounded p-2 mb-2 w-full"
                     />
                     <textarea
@@ -178,7 +149,7 @@ const TeamManagerDashboard = () => {
                       <option value="closed">Closed</option>
                     </select>
                     <button
-                      className="bg-green-600 text-white mt-3 p-2 rounded"
+                      className="bg-green-600 text-white p-2 rounded hover:bg-green-700"
                       onClick={handleBugCreation}
                     >
                       Create Bug

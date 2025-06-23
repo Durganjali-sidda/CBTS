@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchProjects, fetchBugs, fetchTeamMembers } from "../services/api";
 
 const EngineeringManagerDashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -10,18 +10,10 @@ const EngineeringManagerDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
-
         const [projectsRes, bugsRes, teamsRes] = await Promise.all([
-          axios.get("http://localhost:8000/api/projects/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:8000/api/bugs/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:8000/api/teams/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetchProjects(),
+          fetchBugs(),
+          fetchTeamMembers(),
         ]);
 
         setProjects(projectsRes.data);
@@ -46,7 +38,6 @@ const EngineeringManagerDashboard = () => {
     inProgress: bugs.filter((b) => b.status === "in_progress").length,
   };
 
-  // Calculate Project-level Bug Stats
   const getProjectBugStats = (projectId) => {
     const projectBugs = bugs.filter((bug) => bug.project === projectId);
     return {
@@ -57,7 +48,6 @@ const EngineeringManagerDashboard = () => {
     };
   };
 
-  // Calculate Team-level Bug Stats
   const getTeamBugStats = (teamId) => {
     const teamBugs = bugs.filter((bug) => bug.team === teamId);
     return {

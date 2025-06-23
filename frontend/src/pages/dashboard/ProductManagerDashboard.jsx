@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchProjects, fetchBugs } from "../services/api";
 
 const ProductManagerDashboard = () => {
   const [projects, setProjects] = useState([]);
@@ -10,15 +10,9 @@ const ProductManagerDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
-
         const [projectsRes, bugsRes] = await Promise.all([
-          axios.get("http://localhost:8000/api/projects/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get("http://localhost:8000/api/bugs/", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetchProjects(),
+          fetchBugs(),
         ]);
 
         setProjects(projectsRes.data);
@@ -44,7 +38,6 @@ const ProductManagerDashboard = () => {
   if (loading) {
     return (
       <div className="p-4 text-center">
-        {/* Tailwind CSS Spinner */}
         <div className="flex justify-center items-center space-x-2">
           <div className="w-8 h-8 border-4 border-t-4 border-blue-600 border-solid rounded-full animate-spin"></div>
           <p className="mt-2">Loading Product Manager Dashboard...</p>

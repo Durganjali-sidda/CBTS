@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
+import { fetchBugs } from "../services/api";
 
 const CustomerDashboard = () => {
   const [reportedBugs, setReportedBugs] = useState([]);
@@ -9,21 +9,14 @@ const CustomerDashboard = () => {
   useEffect(() => {
     const fetchCustomerBugs = async () => {
       try {
-        const token = localStorage.getItem("access_token");
         const user = JSON.parse(localStorage.getItem("user"));
-
         if (!user || !user.id) {
           console.error("User info missing in localStorage");
           setLoading(false);
           return;
         }
 
-        const res = await axios.get("http://localhost:8000/api/bugs/", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const res = await fetchBugs();
         const userBugs = res.data.filter((bug) => bug.reported_by === user.id);
         setReportedBugs(userBugs);
       } catch (error) {
@@ -54,7 +47,10 @@ const CustomerDashboard = () => {
                 key={bug.id}
                 className="border rounded p-4 bg-gray-50 hover:bg-gray-100 transition"
               >
-                <Link to={`/bug/${bug.id}`} className="text-lg font-semibold text-blue-700 hover:underline">
+                <Link
+                  to={`/bug/${bug.id}`}
+                  className="text-lg font-semibold text-blue-700 hover:underline"
+                >
                   {bug.title}
                 </Link>
                 <p className="text-sm text-gray-600">

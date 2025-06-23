@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import { fetchBug, updateBug } from "../services/api";
 
 const BugDetailsPage = () => {
   const { id } = useParams();
@@ -9,42 +9,33 @@ const BugDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const token = localStorage.getItem("access_token");
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-    const fetchBug = async () => {
+    const loadBug = async () => {
       try {
-        const res = await axios.get(`http://localhost:8000/api/bugs/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetchBug(id);
         setBug(res.data);
         setStatus(res.data.status);
-        console.log("Bug fetched:", res.data); // ✅ You're seeing this
+        console.log("✅ Bug fetched:", res.data);
       } catch (err) {
-        setError("Failed to load bug");
-        console.error("Error fetching bug:", err);
+        console.error("❌ Error fetching bug:", err);
+        setError("Failed to load bug.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBug();
-  }, [id, token]);
+    loadBug();
+  }, [id]);
 
   const handleStatusUpdate = async () => {
     try {
-      await axios.patch(
-        `http://localhost:8000/api/bugs/${id}/`,
-        { status },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("Status updated!");
+      await updateBug(id, { status });
+      alert("✅ Status updated!");
     } catch (err) {
-      setError("Status update failed");
-      console.error("Error updating status:", err);
+      console.error("❌ Error updating status:", err);
+      setError("Status update failed.");
     }
   };
 

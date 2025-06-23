@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
+import { fetchBugs } from "../services/api"; // 🔁 use centralized API instance
 
 const DeveloperDashboard = () => {
   const [assignedBugs, setAssignedBugs] = useState([]);
@@ -10,22 +10,18 @@ const DeveloperDashboard = () => {
     const fetchDeveloperBugs = async () => {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
-        const token = localStorage.getItem("access_token");
 
-        if (!user || !token) {
-          console.error("User or token not found");
+        if (!user) {
+          console.error("User not found in localStorage.");
           return;
         }
 
-        const res = await axios.get(
-          `http://localhost:8000/api/bugs/?assigned_to=${user.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+        // Fetch all bugs and filter assigned ones
+        const res = await fetchBugs();
+        const developerBugs = res.data.filter(
+          (bug) => bug.assigned_to === user.id
         );
-        setAssignedBugs(res.data);
+        setAssignedBugs(developerBugs);
       } catch (err) {
         console.error("Error fetching assigned bugs", err);
       } finally {

@@ -10,7 +10,7 @@ User = get_user_model()
 # ----------------------------
 class CustomLoginSerializer(LoginSerializer):
     """
-    Custom login with only username and password.
+    Custom login serializer using username and password only.
     """
     def get_fields(self):
         fields = super().get_fields()
@@ -23,8 +23,9 @@ class CustomLoginSerializer(LoginSerializer):
         )
         return fields
 
+
 # ----------------------------
-# Nested Serializers
+# Basic Nested Serializers
 # ----------------------------
 class TeamBasicSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,6 +41,7 @@ class BugBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bug
         fields = ['id', 'title', 'status', 'priority']
+
 
 # ----------------------------
 # User Serializer
@@ -61,7 +63,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_related_projects(self, obj):
         if obj.role == 'product_manager':
             projects = Project.objects.filter(manager=obj)
-        elif obj.role in ['team_lead', 'developer', 'tester', 'team_manager']:
+        elif obj.role in ['team_manager', 'team_lead', 'developer', 'tester']:
             if obj.team:
                 projects = Project.objects.filter(team=obj.team)
             else:
@@ -80,6 +82,7 @@ class UserSerializer(serializers.ModelSerializer):
         bugs = Bug.objects.filter(reported_by=obj)
         return BugBasicSerializer(bugs, many=True).data
 
+
 # ----------------------------
 # Project Serializer
 # ----------------------------
@@ -90,7 +93,10 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description', 'manager', 'teams', 'bugs', 'created_at', 'updated_at']
+        fields = [
+            'id', 'name', 'description', 'manager',
+            'teams', 'bugs', 'created_at', 'updated_at'
+        ]
 
     def get_teams(self, obj):
         teams = Team.objects.filter(project=obj)
@@ -99,6 +105,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_bugs(self, obj):
         bugs = Bug.objects.filter(project=obj)
         return [bug.title for bug in bugs]
+
 
 # ----------------------------
 # Team Serializer
@@ -115,6 +122,7 @@ class TeamSerializer(serializers.ModelSerializer):
         users = User.objects.filter(team=obj)
         return [f"{user.first_name} {user.last_name} ({user.role})" for user in users]
 
+
 # ----------------------------
 # Bug Serializer
 # ----------------------------
@@ -128,6 +136,7 @@ class BugSerializer(serializers.ModelSerializer):
     )
 
     project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())
+
     team = serializers.PrimaryKeyRelatedField(
         queryset=Team.objects.all(),
         required=False,
@@ -145,7 +154,8 @@ class BugSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
 
-        if user.role not in ['tester', 'customer', 'admin']:
+        # Enforce role-level bug reporting
+        if user.role not in ['tester', 'customer', 'product_manager', 'engineering_manager', 'team_manager']:
             raise serializers.ValidationError("You are not allowed to report a bug.")
 
         validated_data['reported_by'] = user
@@ -155,13 +165,11 @@ class BugSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         role = user.role
 
-        # Developer can only update status
+        # Restrict update fields based on role
         if role == 'developer':
             validated_data = {
                 k: v for k, v in validated_data.items() if k == 'status'
             }
-
-        # Team Lead or Team Manager can update status and priority
         elif role in ['team_lead', 'team_manager']:
             validated_data = {
                 k: v for k, v in validated_data.items() if k in ['status', 'priority']

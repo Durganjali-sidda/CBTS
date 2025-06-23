@@ -1,32 +1,16 @@
-"""
-URL configuration for cbts project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 # cbts/urls.py
+
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 
+# ✅ Root welcome view for base URL
 def api_root(request):
     return JsonResponse({"message": "Welcome to the CBTS API. Use /api/ for access."})
+
 urlpatterns = [
-    path('', api_root), 
-    path('admin/', admin.site.urls),
-    path('api/', include('tracker.urls')),  # Include the tracker URLs
-    path('api/auth/', include('dj_rest_auth.urls')),
-    
+    path('', api_root),  # Root API message
+    path('admin/', admin.site.urls),  # Django admin
+    path('api/', include('tracker.urls')),  # Core API (bugs, users, teams, etc.)
+    path('api/auth/', include('dj_rest_auth.urls')),  # dj-rest-auth login/logout/password flows
 ]
-
-

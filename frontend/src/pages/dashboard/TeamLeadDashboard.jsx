@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchUsers, fetchBugs } from "../services/api";
 
 const TeamLeadDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([]);
@@ -11,7 +11,6 @@ const TeamLeadDashboard = () => {
   useEffect(() => {
     const fetchTeamData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
         const currentUser = JSON.parse(localStorage.getItem("user"));
         const userTeamId = currentUser?.team;
 
@@ -22,16 +21,8 @@ const TeamLeadDashboard = () => {
         }
 
         const [usersRes, bugsRes] = await Promise.all([
-          axios.get("http://localhost:8000/api/users/", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          axios.get("http://localhost:8000/api/bugs/", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
+          fetchUsers(),
+          fetchBugs(),
         ]);
 
         const teamUsers = usersRes.data.filter(user => user.team === userTeamId);
@@ -57,13 +48,14 @@ const TeamLeadDashboard = () => {
     closed: teamBugs.filter(b => b.status === "closed").length,
   };
 
-  // Filter bugs by status if a filter is applied
-  const filteredBugs = bugStatusFilter === "all" ? teamBugs : teamBugs.filter(bug => bug.status === bugStatusFilter);
+  const filteredBugs =
+    bugStatusFilter === "all"
+      ? teamBugs
+      : teamBugs.filter(bug => bug.status === bugStatusFilter);
 
   if (loading) {
     return (
       <div className="p-4 text-center">
-        {/* Tailwind CSS Spinner */}
         <div className="flex justify-center items-center space-x-2">
           <div className="w-8 h-8 border-4 border-t-4 border-blue-600 border-solid rounded-full animate-spin"></div>
           <p className="mt-2">Loading Team Lead Dashboard...</p>
@@ -101,7 +93,6 @@ const TeamLeadDashboard = () => {
       <section className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-semibold mb-4">Team Bug Overview</h2>
 
-        {/* Bug Status Filter */}
         <div className="mb-4">
           <label htmlFor="bug-status" className="text-sm font-semibold text-gray-700">
             Filter by Status:
@@ -119,7 +110,6 @@ const TeamLeadDashboard = () => {
           </select>
         </div>
 
-        {/* Bug Statistics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-100 p-4 rounded text-center">
             <h3 className="text-lg font-semibold">Total</h3>
@@ -139,7 +129,6 @@ const TeamLeadDashboard = () => {
           </div>
         </div>
 
-        {/* Displaying filtered bugs */}
         <h3 className="text-xl font-semibold mt-6">Filtered Bugs</h3>
         {filteredBugs.length === 0 ? (
           <p className="text-gray-600">No bugs match the selected status.</p>
